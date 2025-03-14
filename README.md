@@ -18,7 +18,7 @@ docker run --rm -it \
   --workdir /mnt \
   bash bash -c 'set -euxo pipefail && \
     apk add docker && \
-    wget https://mise.run -O - | sh && \
+    wget -q https://mise.run -O - | sh && \
     eval "$(~/.local/bin/mise activate bash)" && \
     mise run "create:*:*" && \
     mise run "delete:*:*" \

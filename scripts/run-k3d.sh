@@ -2,33 +2,31 @@
 
 # The "create" needs to be idempotent !
 create() {
-  if kind get clusters 2>&1 | grep -q "^${CLUSTER_FQDN}$"; then
+  if k3d cluster list --no-headers | grep -q "^${CLUSTER_FQDN} "; then
     echo "*** Cluster \"${CLUSTER_FQDN}\" already exists...."
   else
     mkdir -p "${CLUSTERS_KUBECONFIG_DIRECTORY}"
-    cat << EOF | kind create cluster --name "${CLUSTER_FQDN}" --kubeconfig "${CLUSTERS_KUBECONFIG_DIRECTORY}/kubeconfig_${CLUSTER_FQDN}.yml" --config -
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-nodes:
-- role: control-plane
-- role: worker
-EOF
+    k3d cluster create "${CLUSTER_FQDN}" --kubeconfig-update-default=false \
+      --k3s-arg "--disable=traefik@all" \
+      --k3s-arg "--disable=local-storage@all" \
+      --k3s-arg "--disable=metrics-server@all"
+    k3d kubeconfig write "${CLUSTER_FQDN}" --overwrite --output "${CLUSTERS_KUBECONFIG_DIRECTORY}/kubeconfig_${CLUSTER_FQDN}.yml"
   fi
 }
 
 delete() {
-  if kind get clusters | grep -q "^${CLUSTER_FQDN}$"; then
-    kind delete cluster --name "${CLUSTER_FQDN}" --kubeconfig "${CLUSTERS_KUBECONFIG_DIRECTORY}/kubeconfig_${CLUSTER_FQDN}.yml"
+  if k3d cluster list --no-headers | grep -q "^${CLUSTER_FQDN} "; then
+    k3d cluster delete "${CLUSTER_FQDN}"
     if [[ -f "${CLUSTERS_KUBECONFIG_DIRECTORY}/kubeconfig_${CLUSTER_FQDN}.yml" ]]; then
-      echo "*** Deleting \"${CLUSTERS_KUBECONFIG_DIRECTORY}/kubeconfig_${CLUSTER_FQDN}.yml\""
+      echo "*** Deleting \"${CLUSTERS_KUBECONFIG_DIRECTORY}/kubeconfig_${CLUSTER_FQDN}.yml\" ..."
       rm "${CLUSTERS_KUBECONFIG_DIRECTORY}/kubeconfig_${CLUSTER_FQDN}.yml"
     fi
     if [[ -d "${CLUSTERS_KUBECONFIG_DIRECTORY}" && -z "$(ls -A "${CLUSTERS_KUBECONFIG_DIRECTORY}")" ]]; then
-      echo "*** Deleting empty \"${CLUSTERS_KUBECONFIG_DIRECTORY}\""
+      echo "*** Deleting empty \"${CLUSTERS_KUBECONFIG_DIRECTORY}\" ..."
       rmdir "${CLUSTERS_KUBECONFIG_DIRECTORY}" || true
     fi
   else
-    echo "*** Cluster \"${CLUSTER_FQDN}\" does not exist"
+    echo "*** Cluster \"${CLUSTER_FQDN}\" does not exist..."
   fi
 }
 
@@ -46,11 +44,11 @@ fi
 
 case "$1" in
   create)
-    echo "*** Creating K8s cluster"
+    echo "*** Creating K8s cluster..."
     create
     ;;
   delete)
-    echo "*** Deleting K8s cluster"
+    echo "*** Deleting K8s cluster..."
     delete
     ;;
   *)

@@ -1,3 +1,6 @@
+[tools]
+kind = "0.27.0"
+
 [env]
 _.file = ".env.yaml"
 # keep-sorted start
@@ -5,10 +8,10 @@ CLUSTER_FQDN = "kind01.internal"
 CLUSTER_NAME = "kind01"
 # keep-sorted end
 
-[tasks."create"]
+[tasks."create:kind01-internal"]
 description = 'Create K8s cluster'
 run = '${CLUSTERS_RUN_SCRIPT_DIRECTORY}/run-kind.sh create'
 
-[tasks."delete"]
+[tasks."delete:kind01-internal"]
 description = 'Delete K8s cluster'
 run = '${CLUSTERS_RUN_SCRIPT_DIRECTORY}/run-kind.sh delete'

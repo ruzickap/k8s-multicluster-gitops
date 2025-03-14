@@ -1,0 +1,17 @@
+[tools]
+k3d = "5.8.3"
+
+[env]
+_.file = ".env.yaml"
+# keep-sorted start
+CLUSTER_FQDN = "k3d01.internal"
+CLUSTER_NAME = "k3d01"
+# keep-sorted end
+
+[tasks."create:k3d01-internal"]
+description = 'Create K8s cluster'
+run = '${CLUSTERS_RUN_SCRIPT_DIRECTORY}/run-k3d.sh create'
+
+[tasks."delete:k3d01-internal"]
+description = 'Delete K8s cluster'
+run = '${CLUSTERS_RUN_SCRIPT_DIRECTORY}/run-k3d.sh delete'

@@ -1,9 +1,7 @@
 [tools]
 # keep-sorted start
-eksctl = "0.205.0"
+k3d = "5.8.3"
 kind = "0.27.0"
-kubectl = "1.32.3"
-opentofu = "1.9.0"
 sops = "3.9.4"
 # keep-sorted end
 
@@ -22,19 +20,44 @@ CLUSTERS_KUBECONFIG_DIRECTORY = "{{ config_root }}/clusters/.kubeconfig"
 # Directory which contains the scripts to create and delete the clusters
 CLUSTERS_RUN_SCRIPT_DIRECTORY = "{{ config_root }}/scripts"
 
+#######################################
+# Kind
+#######################################
+
 [tasks."create:kind:kind01-internal"]
 description = 'Create kind01.internal K8s cluster'
 # Run mise again due to missing support for SOPS-encrypted environment variables in tasks: https://github.com/jdx/mise/discussions/4593
-run = 'cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" && mise run create'
+run = 'cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" && mise run create:kind01-internal'
 
 [tasks."delete:kind:kind01-internal"]
 description = 'Delete kind01.internal K8s cluster'
-run = 'cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" && mise run delete'
+run = 'cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" && mise run delete:kind01-internal'
 
 [tasks."create:kind:kind02-internal"]
 description = 'Create kind02.internal K8s cluster'
-run = 'cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" && mise run create'
+run = 'cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" && mise run create:kind02-internal'
 
 [tasks."delete:kind:kind02-internal"]
 description = 'Delete kind02.internal K8s cluster'
-run = 'cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" && mise run delete'
+run = 'cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" && mise run delete:kind02-internal'
+
+#######################################
+# K3d
+#######################################
+
+[tasks."create:k3d:k3d01-internal"]
+description = 'Create k3d01.internal K8s cluster'
+# Run mise again due to missing support for SOPS-encrypted environment variables in tasks: https://github.com/jdx/mise/discussions/4593
+run = 'cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" && mise run create:k3d01-internal'
+
+[tasks."delete:k3d:k3d01-internal"]
+description = 'Delete k3d01.internal K8s cluster'
+run = 'cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" && mise run delete:k3d01-internal'
+
+[tasks."create:k3d:k3d02-internal"]
+description = 'Create k3d02.internal K8s cluster'
+run = 'cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" && mise run create:k3d02-internal'
+
+[tasks."delete:k3d:k3d02-internal"]
+description = 'Delete k3d02.internal K8s cluster'
+run = 'cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" && mise run delete:k3d02-internal'

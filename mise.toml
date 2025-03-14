@@ -1,0 +1,40 @@
+[tools]
+# keep-sorted start
+eksctl = "0.205.0"
+kind = "0.27.0"
+kubectl = "1.32.3"
+opentofu = "1.9.0"
+sops = "3.9.4"
+# keep-sorted end
+
+[settings]
+experimental = true
+# Use MISE_SOPS_AGE_KEY="$(grep -v ^# ~/Documents/secrets/age.txt)" instead
+# sops.age_key_file = "~/Documents/secrets/age.txt"
+trusted_config_paths = ["/"]
+
+[env]
+_.file = ".env.yaml"
+# Directory which contains the clusters mise configurations
+CLUSTERS_DIRECTORY = "{{ config_root }}/clusters"
+# Directory which contains the kubeconfig files for the created clusters (will be create if not exists)
+CLUSTERS_KUBECONFIG_DIRECTORY = "{{ config_root }}/clusters/.kubeconfig"
+# Directory which contains the scripts to create and delete the clusters
+CLUSTERS_RUN_SCRIPT_DIRECTORY = "{{ config_root }}/scripts"
+
+[tasks."create:kind:kind01-internal"]
+description = 'Create kind01.internal K8s cluster'
+# Run mise again due to missing support for SOPS-encrypted environment variables in tasks: https://github.com/jdx/mise/discussions/4593
+run = 'cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" && mise run create'
+
+[tasks."delete:kind:kind01-internal"]
+description = 'Delete kind01.internal K8s cluster'
+run = 'cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" && mise run delete'
+
+[tasks."create:kind:kind02-internal"]
+description = 'Create kind02.internal K8s cluster'
+run = 'cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" && mise run create'
+
+[tasks."delete:kind:kind02-internal"]
+description = 'Delete kind02.internal K8s cluster'
+run = 'cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" && mise run delete'

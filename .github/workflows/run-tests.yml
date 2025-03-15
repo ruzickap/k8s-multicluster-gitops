@@ -17,7 +17,19 @@ env:
   MISE_SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+defaults:
+  run:
+    shell: bash -euxo pipefail {0}
+
 jobs:
+  github-context:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: |
+          echo "${GITHUB_CONTEXT}"
   docker-mise-linux:
     if: ${{ (!startsWith(github.head_ref, 'renovate/') && !startsWith(github.head_ref, 'release-please--')) }}
     runs-on: ${{ matrix.os }}

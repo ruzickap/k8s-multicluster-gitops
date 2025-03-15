@@ -3,25 +3,24 @@
 # keep-sorted start
 k3d = "5.8.3"
 kind = "0.27.0"
-sops = "3.9.4"
 # keep-sorted end
 
 [settings]
 experimental = true
-# Use MISE_SOPS_AGE_KEY="$(grep -v ^# ~/Documents/secrets/age.txt)" instead
-# sops.age_key_file = "~/Documents/secrets/age.txt"
 trusted_config_paths = ["/"]
+task_output = "prefix"
 
 [env]
-# Issue/Bug: https://github.com/jdx/mise/discussions/4641
-# _.file = { path = [".env.yaml"], redact = true }
-_.file = ".env.yaml"
+# keep-sorted start
 # Directory which contains the clusters mise configurations
 CLUSTERS_DIRECTORY = "{{ config_root }}/clusters"
 # Directory which contains the kubeconfig files for the created clusters (will be create if not exists)
 CLUSTERS_KUBECONFIG_DIRECTORY = "{{ config_root }}/clusters/.kubeconfig"
 # Directory which contains the scripts to create and delete the clusters
 CLUSTERS_RUN_SCRIPT_DIRECTORY = "{{ config_root }}/scripts"
+CLICOLOR_FORCE = "1"
+MISE_TASK_OUTPUT = "prefix"
+# keep-sorted stop
 
 [tasks."create-all"]
 description = 'Create all K8s clusters'
@@ -33,19 +32,13 @@ confirm = 'Are you sure you want to delete all K8s clusters created by mise?'
 # Do not use 'depends = ["delete:*:*"]' because it will run before question above
 run = 'mise run "delete:*:*"'
 
-[tasks.test1]
-run = 'mise run --cd "${CLUSTERS_DIRECTORY}/tests" local_test'
-
-[tasks.test2]
-run = 'mise run --cd "${CLUSTERS_DIRECTORY}/tests" local_test'
-
 #######################################
 # Kind
 #######################################
 
 [tasks."create:kind:kind01-internal"]
 description = 'Create kind01.internal K8s cluster'
-# Run mise again due to missing support for SOPS-encrypted environment variables in tasks: https://github.com/jdx/mise/discussions/4593
+# Run mise again due to missing support for environment variables in tasks: https://github.com/jdx/mise/discussions/4593
 run = 'mise run --cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" create:kind01-internal'
 
 [tasks."delete:kind:kind01-internal"]
@@ -74,7 +67,7 @@ run = 'mise run "delete:kind:*"'
 
 [tasks."create:k3d:k3d01-internal"]
 description = 'Create k3d01.internal K8s cluster'
-# Run mise again due to missing support for SOPS-encrypted environment variables in tasks: https://github.com/jdx/mise/discussions/4593
+# Run mise again due to missing support for environment variables in tasks: https://github.com/jdx/mise/discussions/4593
 run = 'mise run --cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" create:k3d01-internal'
 
 [tasks."delete:k3d:k3d01-internal"]

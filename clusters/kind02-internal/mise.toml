@@ -1,12 +1,7 @@
 [tools]
 kind = "0.27.0"
-sops = "3.9.4"
-
-[settings]
-task_output = "prefix"
 
 [env]
-_.file = ".env.yaml"
 # keep-sorted start
 CLUSTER_FQDN = "kind02.internal"
 CLUSTER_NAME = "kind02"

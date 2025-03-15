@@ -1,12 +1,7 @@
 [tools]
 k3d = "5.8.3"
-sops = "3.9.4"
-
-[settings]
-task_output = "prefix"
 
 [env]
-_.file = ".env.yaml"
 # keep-sorted start
 CLUSTER_FQDN = "k3d02.internal"
 CLUSTER_NAME = "k3d02"

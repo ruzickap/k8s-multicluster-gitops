@@ -59,7 +59,7 @@ jobs:
             '
 
   mise-linux:
-    if: ${{ (!startsWith(github.head_ref, 'renovate/') && !startsWith(github.head_ref, 'release-please--')) }}
+    if: ${{ (!startsWith(github.ref_name, 'renovate/') && !startsWith(github.ref_name, 'release-please--')) }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

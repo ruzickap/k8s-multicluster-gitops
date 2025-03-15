@@ -2,11 +2,13 @@
 # See all available variables at https://megalinter.io/latest/configuration/ and in linters documentation
 
 # keep-sorted start newline_separated=yes
+BASH_SHELLCHECK_ARGUMENTS: --exclude=SC2317
+
 BASH_SHFMT_ARGUMENTS: --case-indent --indent 2 --space-redirects
 
 DISABLE_LINTERS:
   - MARKDOWN_MARKDOWN_LINK_CHECK # Using lychee instead
-  - REPOSITORY_DEVSKIM
+  - REPOSITORY_DEVSKIM # Ignore duplicate code
   - SPELL_CSPELL
   - TERRAFORM_TERRASCAN # Hard to configure - no documentation of the config file
 

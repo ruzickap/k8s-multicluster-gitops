@@ -2,6 +2,7 @@
 
 # The "create" needs to be idempotent !
 create() {
+  kind --version
   if kind get clusters 2>&1 | grep -q "^${CLUSTER_FQDN}$"; then
     echo "*** Cluster \"${CLUSTER_FQDN}\" already exists...."
   else

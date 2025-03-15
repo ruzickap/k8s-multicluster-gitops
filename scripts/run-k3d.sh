@@ -2,6 +2,7 @@
 
 # The "create" needs to be idempotent !
 create() {
+  k3d --version
   if k3d cluster list --no-headers | grep -q "^${CLUSTER_FQDN} "; then
     echo "*** Cluster \"${CLUSTER_FQDN}\" already exists...."
   else

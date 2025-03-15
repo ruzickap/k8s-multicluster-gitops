@@ -8,7 +8,7 @@ on:
     paths:
       - ".github/workflows/run-tests.yml"
       - "**kind**"
-      - "**k3s**"
+      - "**k3d**"
 
 permissions: read-all
 
@@ -19,6 +19,7 @@ env:
 
 jobs:
   docker-mise-linux:
+    if: ${{ (!startsWith(github.head_ref, 'renovate/') && !startsWith(github.head_ref, 'release-please--')) }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -40,11 +41,13 @@ jobs:
               apk add docker && \
               wget -q https://mise.run -O - | sh && \
               eval "$(~/.local/bin/mise activate bash)" && \
-              mise run "create:*:*" && \
-              mise run "delete:*:*" \
+              mise run "create-kind-all" ::: "create-k3d-all" && \
+              mise run "delete-kind-all" ::: "delete-k3d-all" && \
+              echo "*** Completed ..." \
             '
 
   mise-linux:
+    if: ${{ (!startsWith(github.head_ref, 'renovate/') && !startsWith(github.head_ref, 'release-please--')) }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -55,9 +58,10 @@ jobs:
       - name: 🛠️ Checkout Code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      - name: 📦 Install mise
+        uses: jdx/mise-action@5083fe46898c414b2475087cc79da59e7da859e8 # v2
+
       - name: 🚀 Run mise
         run: |
-          wget -q https://mise.run -O - | sh
-          eval "$(~/.local/bin/mise activate bash)"
-          mise run "create:*:*"
-          mise run "delete:*:*"
+          mise run "create-kind-all" ::: "create-k3d-all"
+          mise run "delete-kind-all" ::: "delete-k3d-all"

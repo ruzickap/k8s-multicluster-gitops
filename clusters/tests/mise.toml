@@ -1,9 +1,0 @@
-[tools]
-kind = "0.27.0"
-sops = "3.9.4"
-
-[env]
-_.file = ".env.yaml"
-
-[tasks.local_test]
-run = ['echo "${PATH}"','kind --version', 'echo "${my_local_secret}"', 'echo "${my_global_secret}"', '${CLUSTERS_RUN_SCRIPT_DIRECTORY}/test.sh']

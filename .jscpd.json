@@ -1,3 +1,0 @@
-{
-  "ignore": ["**/scripts/**", "**/.git/**", ".github/workflows/run-tests.yml"]
-}

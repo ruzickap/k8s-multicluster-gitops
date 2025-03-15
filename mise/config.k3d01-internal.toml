@@ -1,6 +1,3 @@
-[tools]
-k3d = "5.8.3"
-
 [env]
 # keep-sorted start
 CLUSTER_FQDN = "k3d01.internal"

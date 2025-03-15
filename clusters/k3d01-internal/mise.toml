@@ -2,6 +2,9 @@
 k3d = "5.8.3"
 sops = "3.9.4"
 
+[settings]
+task_output = "prefix"
+
 [env]
 _.file = ".env.yaml"
 # keep-sorted start

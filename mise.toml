@@ -39,19 +39,19 @@ run = 'mise run "delete:*:*"'
 [tasks."create:kind:kind01-internal"]
 description = 'Create kind01.internal K8s cluster'
 # Run mise again due to missing support for environment variables in tasks: https://github.com/jdx/mise/discussions/4593
-run = 'mise run --cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" create:kind01-internal'
+run = 'mise run --env ${MISE_TASK_NAME##*:} create:${MISE_TASK_NAME##*:}'
 
 [tasks."delete:kind:kind01-internal"]
 description = 'Delete kind01.internal K8s cluster'
-run = 'mise run --cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" delete:kind01-internal'
+run = 'mise run --env ${MISE_TASK_NAME##*:} delete:${MISE_TASK_NAME##*:}'
 
 [tasks."create:kind:kind02-internal"]
 description = 'Create kind02.internal K8s cluster'
-run = 'mise run --cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" create:kind02-internal'
+run = 'mise run --env ${MISE_TASK_NAME##*:} create:${MISE_TASK_NAME##*:}'
 
 [tasks."delete:kind:kind02-internal"]
 description = 'Delete kind02.internal K8s cluster'
-run = 'mise run --cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" delete:kind02-internal'
+run = 'mise run --env ${MISE_TASK_NAME##*:} delete:${MISE_TASK_NAME##*:}'
 
 [tasks."create-kind-all"]
 description = 'Create kind K8s clusters'
@@ -68,19 +68,19 @@ run = 'mise run "delete:kind:*"'
 [tasks."create:k3d:k3d01-internal"]
 description = 'Create k3d01.internal K8s cluster'
 # Run mise again due to missing support for environment variables in tasks: https://github.com/jdx/mise/discussions/4593
-run = 'mise run --cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" create:k3d01-internal'
+run = 'mise run --env ${MISE_TASK_NAME##*:} create:${MISE_TASK_NAME##*:}'
 
 [tasks."delete:k3d:k3d01-internal"]
 description = 'Delete k3d01.internal K8s cluster'
-run = 'mise run --cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" delete:k3d01-internal'
+run = 'mise run --env ${MISE_TASK_NAME##*:} delete:${MISE_TASK_NAME##*:}'
 
 [tasks."create:k3d:k3d02-internal"]
 description = 'Create k3d02.internal K8s cluster'
-run = 'mise run --cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" create:k3d02-internal'
+run = 'mise run --env ${MISE_TASK_NAME##*:} create:${MISE_TASK_NAME##*:}'
 
 [tasks."delete:k3d:k3d02-internal"]
 description = 'Delete k3d02.internal K8s cluster'
-run = 'mise run --cd "${CLUSTERS_DIRECTORY}/${MISE_TASK_NAME##*:}" delete:k3d02-internal'
+run = 'mise run --env ${MISE_TASK_NAME##*:} delete:${MISE_TASK_NAME##*:}'
 
 [tasks."create-k3d-all"]
 description = 'Create k3d K8s clusters'

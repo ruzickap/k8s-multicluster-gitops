@@ -36,6 +36,7 @@ exclude = [
   'stackexchange\.com',
   # returns 403 when accessed from GitHub Action
   'stackoverflow\.com',
+  'token\.actions\.githubusercontent\.com',
   # keep-sorted end
 ]
 

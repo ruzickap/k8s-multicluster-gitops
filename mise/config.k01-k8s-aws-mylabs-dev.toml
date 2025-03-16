@@ -1,0 +1,12 @@
+[env]
+CLUSTER_FQDN = "k01.k8s.aws.mylabs.dev"
+BASE_DOMAIN = '{{ env.CLUSTER_FQDN | split(pat=".") | slice(start=1) | join(sep=".") }}'
+CLUSTER_NAME = '{{ env.CLUSTER_FQDN | split(pat=".") | first }}'
+
+[tasks."create:k01-k8s-aws-mylabs-dev"]
+description = 'Create K8s cluster'
+run = '${CLUSTERS_RUN_SCRIPT_DIRECTORY}/run-eksctl.sh create'
+
+[tasks."delete:k01-k8s-aws-mylabs-dev"]
+description = 'Delete K8s cluster'
+run = '${CLUSTERS_RUN_SCRIPT_DIRECTORY}/run-eksctl.sh delete'

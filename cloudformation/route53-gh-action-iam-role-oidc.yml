@@ -28,7 +28,7 @@ Parameters:
       Default allows any branch or tag of the McK-Internal/VM-wiz-automation to assume the role.
       See https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect#example-subject-claims
       for examples of filtering by branch or deployment environment.
-  ManagedPolicyARNs:
+  ManagedPolicyArns:
     Type: CommaDelimitedList
     Description: Comma separated list for arns for managed policies to attach to the role
   RoleName:
@@ -80,7 +80,7 @@ Resources:
       Description: Service Role for use in GitHub Actions
       RoleName: !Ref RoleName
       MaxSessionDuration: 36000
-      ManagedPolicyArns: !Ref ManagedPolicyARNs
+      ManagedPolicyArns: !Ref ManagedPolicyArns
 
 Outputs:
   GitHubActionsServiceRoleArn:

@@ -22,21 +22,11 @@ CLICOLOR_FORCE = "1"
 # Directory which contains the clusters mise configurations
 CLUSTERS_DIRECTORY = "{{ config_root }}/clusters"
 # Directory which contains the kubeconfig files for the created clusters (will be create if not exists)
-CLUSTERS_KUBECONFIG_DIRECTORY = "{{ config_root }}/clusters/.kubeconfig"
+CLUSTERS_KUBECONFIG_DIRECTORY = "{{ config_root }}/clusters/.kubeconfigs"
 # Directory which contains the scripts to create and delete the clusters
 CLUSTERS_RUN_SCRIPT_DIRECTORY = "{{ config_root }}/scripts"
 MISE_TASK_OUTPUT = "prefix"
 # keep-sorted end
-
-[tasks."create-all"]
-description = 'Create all K8s clusters'
-run = 'mise run "create:*:*"'
-
-[tasks."delete-all"]
-description = 'Delete all K8s clusters'
-confirm = 'Are you sure you want to delete all K8s clusters created by mise?'
-# Do not use 'depends = ["delete:*:*"]' because it will run before question above
-run = 'mise run "delete:*:*"'
 
 ##############################################################################
 # Primary AWS Account - CloudFormation - Route53 + GitHub Actions Access + IAM role
@@ -48,16 +38,20 @@ confirm = '''
 Make sure you have the following AWS environment variables set for your "Primary AWS account":
 - AWS_ACCESS_KEY_ID
 - AWS_SECRET_ACCESS_KEY
-- AWS_SESSION_TOKEN - in case you are using temporary credentials
+- (AWS_SESSION_TOKEN - in case you are using temporary credentials)
 '''
 env.GIT_REPOSITORY = "{{ exec(command='git config --get remote.origin.url') }}"
-env.AWS_CLOUDFORMATION_TEMPLATE_FILE = "cloudformation/aws-cf-route53-gh-action-iam-role-oidc.yml"
+env.AWS_CLOUDFORMATION_TEMPLATE_FILE = "cloudformation/route53-gh-action-iam-role-oidc.yml"
+env.AWS_CLOUDFORMATION_STACK_NAME = "route53-gh-action-iam-role-oidc"
+env.AWS_CLOUDFORMATION_SUBJECT_CLAIM_FILTERS = "repo:ruzickap/k8s-multicluster-gitops:*"
+env.AWS_CLOUDFORMATION_MANAGED_POLICY_ARNS = "arn:aws:iam::aws:policy/AdministratorAccess"
+env.AWS_CLOUDFORMATION_ROLE_NAME = "GitHubFederatedRole"
 run = '''
-  eval aws cloudformation deploy --capabilities CAPABILITY_NAMED_IAM \
-    --stack-name route53-gh-action-iam-role-oidc \
-    --parameter-overrides "PrimaryDomain=${AWS_PRIMARY_DOMAIN} K8sDomain=${AWS_K8S_DOMAIN}" \
-    --template-file "${AWS_CLOUDFORMATION_TEMPLATE_FILE}" \
-    --tags "git_repository=${GIT_REPOSITORY}//${AWS_CLOUDFORMATION_TEMPLATE_FILE}"
+  #!/usr/bin/env bash
+  set -eux
+  eval aws cloudformation deploy --capabilities CAPABILITY_NAMED_IAM --stack-name "${AWS_CLOUDFORMATION_STACK_NAME}" --parameter-overrides "PrimaryDomain=${AWS_PRIMARY_DOMAIN} K8sDomain=${AWS_K8S_DOMAIN} SubjectClaimFilters=${AWS_CLOUDFORMATION_SUBJECT_CLAIM_FILTERS} ManagedPolicyArns=${AWS_CLOUDFORMATION_MANAGED_POLICY_ARNS} RoleName=${AWS_CLOUDFORMATION_ROLE_NAME}" --template-file "${AWS_CLOUDFORMATION_TEMPLATE_FILE}" --tags "git_repository=${GIT_REPOSITORY}//${AWS_CLOUDFORMATION_TEMPLATE_FILE}"
+  IAM_ROLE_ARN=$(aws cloudformation describe-stacks --stack-name "${AWS_CLOUDFORMATION_STACK_NAME}" --query 'Stacks[0].Outputs[? OutputKey==`GitHubActionsServiceRoleArn`].OutputValue' --output text)
+  echo -e "[env]\nAWS_PRIMARY_IAM_ROLE_ARN = \"${IAM_ROLE_ARN}\"" > mise.local.toml
 '''
 
 [tasks."delete:aws-primary:cf-route53-gh-action-iam-role-oidc"]
@@ -70,11 +64,17 @@ Make sure you have the following AWS environment variables set for your "Primary
 - AWS_SECRET_ACCESS_KEY
 - AWS_SESSION_TOKEN - in case you are using temporary credentials
 '''
-
 run = '''
+  #!/usr/bin/env bash
+  set -eux
   aws cloudformation delete-stack --stack-name route53-gh-action-iam-role-oidc
   aws cloudformation wait stack-delete-complete --stack-name route53-gh-action-iam-role-oidc
 '''
+
+##############################################################################
+# AWS Tenant Account
+##############################################################################
+
 
 ##############################################################################
 # Kind

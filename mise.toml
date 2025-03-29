@@ -49,7 +49,7 @@ env.AWS_CLOUDFORMATION_ROLE_NAME = "GitHubFederatedRole"
 run = '''
   #!/usr/bin/env bash
   set -eux
-  eval aws cloudformation deploy --capabilities CAPABILITY_NAMED_IAM --stack-name "${AWS_CLOUDFORMATION_STACK_NAME}" --parameter-overrides "PrimaryDomain=${AWS_PRIMARY_DOMAIN} K8sDomain=${AWS_K8S_DOMAIN} SubjectClaimFilters=${AWS_CLOUDFORMATION_SUBJECT_CLAIM_FILTERS} ManagedPolicyARNs=${AWS_CLOUDFORMATION_MANAGED_POLICY_ARNS} RoleName=${AWS_CLOUDFORMATION_ROLE_NAME}" --template-file "${AWS_CLOUDFORMATION_TEMPLATE_FILE}" --tags "git_repository=${GIT_REPOSITORY}//${AWS_CLOUDFORMATION_TEMPLATE_FILE}"
+  eval aws cloudformation deploy --capabilities CAPABILITY_NAMED_IAM --stack-name "${AWS_CLOUDFORMATION_STACK_NAME}" --parameter-overrides "PrimaryDomain=${AWS_PRIMARY_DOMAIN} K8sDomain=${AWS_K8S_DOMAIN} SubjectClaimFilters=${AWS_CLOUDFORMATION_SUBJECT_CLAIM_FILTERS} ManagedPolicyArns=${AWS_CLOUDFORMATION_MANAGED_POLICY_ARNS} RoleName=${AWS_CLOUDFORMATION_ROLE_NAME}" --template-file "${AWS_CLOUDFORMATION_TEMPLATE_FILE}" --tags "git_repository=${GIT_REPOSITORY}//${AWS_CLOUDFORMATION_TEMPLATE_FILE}"
   IAM_ROLE_ARN=$(aws cloudformation describe-stacks --stack-name "${AWS_CLOUDFORMATION_STACK_NAME}" --query 'Stacks[0].Outputs[? OutputKey==`GitHubActionsServiceRoleArn`].OutputValue' --output text)
   echo -e "[env]\nAWS_PRIMARY_IAM_ROLE_ARN = \"${IAM_ROLE_ARN}\"" > mise.local.toml
 '''

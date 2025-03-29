@@ -76,7 +76,7 @@ Resources:
               - "sts:AssumeRoleWithWebIdentity"
             Condition:
               StringLike:
-                token.actions.githubusercontent.com:sub: !Ref SubjectClaimFilters
+                "token.actions.githubusercontent.com:sub": !Ref SubjectClaimFilters
       Description: Service Role for use in GitHub Actions
       RoleName: !Ref RoleName
       MaxSessionDuration: 36000

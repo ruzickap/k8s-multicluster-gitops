@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: Route53 entry and IAM role for GitHub Actions OIDC federated role
+
+Parameters:
+  PrimaryDomain:
+    Description: "Primary domain for AWS services (e.g. aws.mylabs.dev)"
+    Type: String
+  K8sDomain:
+    Description: "K8s domain hosting cluster subdomains (e.g. k8s.aws.mylabs.dev)"
+    Type: String
+  GithubActionsThumbprint:
+    Type: CommaDelimitedList
+    Default: 6938fd4d98bab03faadb97b34396831e3780aea1
+    Description: >
+      Comma seperated list of thumbprints for GitHub Actions tokens.
+      Default comes from https://github.blog/changelog/2022-01-13-github-actions-update-on-oidc-based-deployments-to-aws/
+  AudienceList:
+    Type: CommaDelimitedList
+    Default: sts.amazonaws.com
+    Description: >
+      Comma separated list of allowed audience for the tokens.
+      Default is audience for the official AWS configure action from https://github.com/aws-actions/configure-aws-credentials
+  SubjectClaimFilters:
+    Type: CommaDelimitedList
+    Description: >
+      Subject claim filter for valid tokens.
+      Default allows any branch or tag of the McK-Internal/VM-wiz-automation to assume the role.
+      See https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect#example-subject-claims
+      for examples of filtering by branch or deployment environment.
+  ManagedPolicyARNs:
+    Type: CommaDelimitedList
+    Description: Comma separated list for arns for managed policies to attach to the role
+  RoleName:
+    Description: "Name of the new IAM role used by GitHub Actions"
+    Type: String
+
+Resources:
+  PrimaryHostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: !Ref PrimaryDomain
+      HostedZoneConfig:
+        Comment: Primary domain for AWS services
+  K8sHostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: !Ref K8sDomain
+      HostedZoneConfig:
+        Comment: K8s domain hosting cluster subdomains
+  nsRootPrimaryHostedZoneRecordSet:
+    Type: "AWS::Route53::RecordSet"
+    Properties:
+      HostedZoneId: !Ref PrimaryHostedZone
+      Name: !Sub "${K8sDomain}."
+      Type: NS
+      TTL: 86400
+      ResourceRecords: !GetAtt K8sHostedZone.NameServers
+  GitHubIdentityProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      ClientIdList: !Ref AudienceList
+      ThumbprintList: !Ref GithubActionsThumbprint
+      Url: https://token.actions.githubusercontent.com
+  GitHubActionsServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: RoleForGitHubActions
+            Effect: Allow
+            Principal:
+              Federated: !Ref GitHubIdentityProvider
+            Action:
+              - "sts:AssumeRoleWithWebIdentity"
+            Condition:
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Ref SubjectClaimFilters
+      Description: Service Role for use in GitHub Actions
+      RoleName: !Ref RoleName
+      MaxSessionDuration: 36000
+      ManagedPolicyArns: !Ref ManagedPolicyARNs
+
+Outputs:
+  GitHubActionsServiceRoleArn:
+    Description: Arn of service role for use in GitHub actions
+    Value: !GetAtt GitHubActionsServiceRole.Arn

@@ -1,2 +1,6 @@
 # pre-commit configuration file
 .pre-commit-config.yaml
+
+# mise local files (https://mise.jdx.dev/configuration/environments.html#config-environments)
+mise.local.toml
+mise.*.local.toml

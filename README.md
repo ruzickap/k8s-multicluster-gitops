@@ -75,7 +75,7 @@ aws iam attach-user-policy --user-name "${AWS_USER_NAME}" --policy-arn "${AWS_PO
 aws iam create-access-key --user-name "${AWS_USER_NAME}"
 
 # Get the ARN of the user
-AWS_USER_ARN=$(aws iam list-users --query 'Users[? UserName==`aws-cli`].Arn' --output text)
+AWS_USER_ARN=$(aws iam list-users --query "Users[? UserName==\`${AWS_USER_NAME}\`].Arn" --output text)
 sed -i "s@^AWS_USER_ARN.*@AWS_USER_ARN = \"${AWS_USER_ARN}\"@" mise.local.toml
 ```
 

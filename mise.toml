@@ -25,56 +25,101 @@ CLUSTERS_DIRECTORY = "{{ config_root }}/clusters"
 CLUSTERS_KUBECONFIG_DIRECTORY = "{{ config_root }}/clusters/.kubeconfigs"
 # Directory which contains the scripts to create and delete the clusters
 CLUSTERS_RUN_SCRIPT_DIRECTORY = "{{ config_root }}/scripts"
+GIT_REPOSITORY = "{{ exec(command='git config --get remote.origin.url') }}"
 MISE_TASK_OUTPUT = "prefix"
 # keep-sorted end
 
 ##############################################################################
-# Primary AWS Account - CloudFormation - Route53 + GitHub Actions Access + IAM role
+# Management AWS Account - CloudFormation - Route53 + GitHub Actions Access + IAM role
 ##############################################################################
 
-[tasks."create:aws-primary:cf-route53-gh-action-iam-role-oidc"]
-description = 'Configure Primary AWS Account - Create CloudFormation - Route53 + GitHub Actions Access + IAM role'
+[tasks."create:aws-mgmt:cf-route53-gh-action-iam-role-oidc"]
+description = 'Configure Management AWS Account - Create CloudFormation - Route53 + GitHub Actions Access + IAM role'
 confirm = '''
-Make sure you have the following AWS environment variables set for your "Primary AWS account":
+Make sure you have the following AWS environment variables set for your "Management AWS account":
 - AWS_ACCESS_KEY_ID
 - AWS_SECRET_ACCESS_KEY
 - (AWS_SESSION_TOKEN - in case you are using temporary credentials)
 '''
-env.GIT_REPOSITORY = "{{ exec(command='git config --get remote.origin.url') }}"
 env.AWS_CLOUDFORMATION_TEMPLATE_FILE = "cloudformation/route53-gh-action-iam-role-oidc.yml"
-env.AWS_CLOUDFORMATION_STACK_NAME = "route53-gh-action-iam-role-oidc"
-env.AWS_CLOUDFORMATION_SUBJECT_CLAIM_FILTERS = "repo:ruzickap/k8s-multicluster-gitops:*"
+env.AWS_CLOUDFORMATION_STACK_NAME = "k8s-multicluster-gitops-route53-gh-action-iam-role-oidc"
+env.AWS_CLOUDFORMATION_SUBJECT_CLAIM_FILTERS = "{{ env.AWS_CLOUDFORMATION_SUBJECT_CLAIM_FILTERS }}"
 env.AWS_CLOUDFORMATION_MANAGED_POLICY_ARNS = "arn:aws:iam::aws:policy/AdministratorAccess"
-env.AWS_CLOUDFORMATION_ROLE_NAME = "GitHubFederatedRole"
+env.AWS_CLOUDFORMATION_MGMT_IAM_ROLE_NAME = "GitHubFederatedRole"
+env.AWS_CLOUDFORMATION_USER_ARN = "{{ env.AWS_USER_ARN }}"
 run = '''
   #!/usr/bin/env bash
   set -eux
-  eval aws cloudformation deploy --capabilities CAPABILITY_NAMED_IAM --stack-name "${AWS_CLOUDFORMATION_STACK_NAME}" --parameter-overrides "PrimaryDomain=${AWS_PRIMARY_DOMAIN} K8sDomain=${AWS_K8S_DOMAIN} SubjectClaimFilters=${AWS_CLOUDFORMATION_SUBJECT_CLAIM_FILTERS} ManagedPolicyArns=${AWS_CLOUDFORMATION_MANAGED_POLICY_ARNS} RoleName=${AWS_CLOUDFORMATION_ROLE_NAME}" --template-file "${AWS_CLOUDFORMATION_TEMPLATE_FILE}" --tags "git_repository=${GIT_REPOSITORY}//${AWS_CLOUDFORMATION_TEMPLATE_FILE}"
+  eval aws cloudformation deploy --capabilities CAPABILITY_NAMED_IAM --stack-name "${AWS_CLOUDFORMATION_STACK_NAME}" \
+    --parameter-overrides "K8sDomain=${AWS_K8S_DOMAIN} ManagedPolicyArns=${AWS_CLOUDFORMATION_MANAGED_POLICY_ARNS} PrimaryDomain=${AWS_PRIMARY_DOMAIN} ManagementIamRoleName=${AWS_CLOUDFORMATION_MGMT_IAM_ROLE_NAME} SubjectClaimFilters=${AWS_CLOUDFORMATION_SUBJECT_CLAIM_FILTERS} UserArn=${AWS_CLOUDFORMATION_USER_ARN}" \
+    --template-file "${AWS_CLOUDFORMATION_TEMPLATE_FILE}" \
+    --tags "git_repository=${GIT_REPOSITORY}//${AWS_CLOUDFORMATION_TEMPLATE_FILE}"
   IAM_ROLE_ARN=$(aws cloudformation describe-stacks --stack-name "${AWS_CLOUDFORMATION_STACK_NAME}" --query 'Stacks[0].Outputs[? OutputKey==`GitHubActionsServiceRoleArn`].OutputValue' --output text)
-  echo -e "[env]\nAWS_PRIMARY_IAM_ROLE_ARN = \"${IAM_ROLE_ARN}\"" > mise.local.toml
+  sed -i "s@^AWS_MGMT_IAM_ROLE_ARN.*@AWS_MGMT_IAM_ROLE_ARN = \"${IAM_ROLE_ARN}\"@" mise.local.toml
 '''
 
-[tasks."delete:aws-primary:cf-route53-gh-action-iam-role-oidc"]
-description = 'Primary AWS Account - Delete CloudFormation - Route53 + GitHub Actions Access + IAM role'
+[tasks."delete:aws-mgmt:cf-route53-gh-action-iam-role-oidc"]
+description = 'Management AWS Account - Delete CloudFormation - Route53 + GitHub Actions Access + IAM role'
 confirm = '''
-Are you sure you want to delete the CloudFormation (Route53 + GitHub Actions Access + IAM role) from Primary AWS Account?
+Are you sure you want to delete the CloudFormation (Route53 + GitHub Actions Access + IAM role) from Management AWS Account?
 
-Make sure you have the following AWS environment variables set for your "Primary AWS account":
+Make sure you have the following AWS environment variables set for your "Management AWS account":
 - AWS_ACCESS_KEY_ID
 - AWS_SECRET_ACCESS_KEY
 - AWS_SESSION_TOKEN - in case you are using temporary credentials
 '''
+env.AWS_CLOUDFORMATION_STACK_NAME = "k8s-multicluster-gitops-route53-gh-action-iam-role-oidc"
 run = '''
   #!/usr/bin/env bash
   set -eux
-  aws cloudformation delete-stack --stack-name route53-gh-action-iam-role-oidc
-  aws cloudformation wait stack-delete-complete --stack-name route53-gh-action-iam-role-oidc
+  aws cloudformation delete-stack --stack-name "${AWS_CLOUDFORMATION_STACK_NAME}"
+  aws cloudformation wait stack-delete-complete --stack-name "${AWS_CLOUDFORMATION_STACK_NAME}"
 '''
 
 ##############################################################################
 # AWS Tenant Account
 ##############################################################################
 
+# https://repost.aws/knowledge-center/cross-account-access-iam
+
+[tasks."create:aws-tenant:cf-allow-mgmt-iam-role-to-assume-tenant-iam-role"]
+description = 'Create IAM role in Tenant AWS Account to allow Management AWS Account IAM role to assume it'
+confirm = '''
+Make sure you have the following AWS environment variables set for your "Tenant AWS account":
+- AWS_ACCESS_KEY_ID
+- AWS_SECRET_ACCESS_KEY
+- (AWS_SESSION_TOKEN - in case you are using temporary credentials)
+'''
+env.AWS_MGMT_IAM_ROLE_ARN = "{{ env.AWS_MGMT_IAM_ROLE_ARN }}"
+env.AWS_TENANT_IAM_ROLE_NAME = "K8sMulticlusterGitopsTenantIamRole"
+env.AWS_TENANT_IAM_ROLE_POLICY_NAME = "K8sMulticlusterGitopsTenantIamRolePolicy"
+env.AWS_CLOUDFORMATION_STACK_NAME = "k8s-multicluster-gitops-allow-mgmt-iam-role-to-assume-tenant-iam-role"
+env.AWS_CLOUDFORMATION_TEMPLATE_FILE = "cloudformation/allow-mgmt-iam-role-to-assume-tenant-iam-role.yml"
+run = '''
+  #!/usr/bin/env bash
+  set -eux
+  eval aws cloudformation deploy --capabilities CAPABILITY_NAMED_IAM --stack-name "${AWS_CLOUDFORMATION_STACK_NAME}" \
+    --parameter-overrides "ManagementIamRoleArn=${AWS_MGMT_IAM_ROLE_ARN} TenantIamRoleName=${AWS_TENANT_IAM_ROLE_NAME} TenantIamRolePolicyName=${AWS_TENANT_IAM_ROLE_POLICY_NAME}" \
+    --template-file "${AWS_CLOUDFORMATION_TEMPLATE_FILE}" \
+    --tags "git_repository=${GIT_REPOSITORY}//${AWS_CLOUDFORMATION_TEMPLATE_FILE}"
+'''
+
+[tasks."delete:aws-tenant:cf-allow-mgmt-iam-role-to-assume-tenant-iam-role"]
+description = 'Delete IAM role in Tenant AWS Account to allow Management AWS Account IAM role to assume it'
+confirm = '''
+Are you sure you want to delete the IAM role in Tenant AWS Account to allow Management AWS Account IAM role to assume it?
+Make sure you have the following AWS environment variables set for your "Tenant AWS account":
+- AWS_ACCESS_KEY_ID
+- AWS_SECRET_ACCESS_KEY
+- (AWS_SESSION_TOKEN - in case you are using temporary credentials)
+'''
+env.AWS_CLOUDFORMATION_STACK_NAME = "k8s-multicluster-gitops-allow-mgmt-iam-role-to-assume-tenant-iam-role"
+run = '''
+  #!/usr/bin/env bash
+  set -eux
+  aws cloudformation delete-stack --stack-name "${AWS_CLOUDFORMATION_STACK_NAME}"
+  aws cloudformation wait stack-delete-complete --stack-name "${AWS_CLOUDFORMATION_STACK_NAME}"
+'''
 
 ##############################################################################
 # Kind

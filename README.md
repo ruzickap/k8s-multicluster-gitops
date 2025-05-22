@@ -21,7 +21,7 @@ This project aims to provide a practical example:
 You likely need to deploy multiple Kubernetes clusters across various cloud
 providers and accounts.
 
-Each cloud provider has a designated "primary account" where subdomains are hosted:
+Each cloud provider has a designated "management account" where subdomains are hosted:
 
 - `aws.mylabs.dev` - AWS
 - `az.mylabs.dev` - Azure
@@ -31,8 +31,8 @@ Each cloud provider has a designated "primary account" where subdomains are host
 > and it's the user's responsibility to configure DNS delegation properly.
 
 An IAM role (or the equivalent for each cloud provider) will be created in the
-primary account. This role will allow GitHub Actions / mise to manage resources
-in the primary account and will also be used to access other accounts where
+management account. This role will allow GitHub Actions / mise to manage resources
+in the management account and will also be used to access other accounts where
 Kubernetes clusters are deployed.
 
 ## Cloud Providers - Multi-Account Setup
@@ -48,16 +48,56 @@ want to deploy 2 Kubernetes clusters (EKS, AKS, GKE) in each account:
 
 ### AWS
 
-#### Primary account
+You should have access to all your AWS accounts via the AWS CLI (using
+`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, ...)
 
-Choose one of your AWS accounts to act as the **primary account** and create a
-Route 53 hosted zone for `aws.mylabs.dev`
+#### Management account
+
+Select one of your AWS accounts to serve as the management account.
+
+##### AWS CLI User
+
+Create an `aws-cli` [IAM user](https://us-east-1.console.aws.amazon.com/iam/home?region=us-east-1#/users)
+in your management AWS account. Then, add the user's ARN to the [mise.toml](mise.toml)
+file under the `env.AWS_USER_ARN` variable.
+
+```bash
+AWS_USER_NAME="aws-cli"
+AWS_POLICY_ARN="arn:aws:iam::aws:policy/AdministratorAccess"
+
+# Create IAM user
+aws iam create-user --user-name "${AWS_USER_NAME}"
+
+# Attach a policy to the user
+aws iam attach-user-policy --user-name "${AWS_USER_NAME}" --policy-arn "${AWS_POLICY_ARN}"
+
+# Create access keys for the user
+aws iam create-access-key --user-name "${AWS_USER_NAME}"
+
+# Get the ARN of the user
+AWS_USER_ARN=$(aws iam list-users --query "Users[? UserName==\`${AWS_USER_NAME}\`].Arn" --output text)
+sed -i "s@^AWS_USER_ARN.*@AWS_USER_ARN = \"${AWS_USER_ARN}\"@" mise.local.toml
+```
+
+The `aws-cli` user was created in the management AWS account and will be used to
+access all AWS accounts via the AWS CLI.
+
+##### Route35 Hosted Zone + GitHub Action IAM Role
+
+The following steps will create a Route 53 hosted zone for the subdomain
+`aws.mylabs.dev` and a GitHub Action IAM role that can be assumed by the
+GitHub Actions workflow.
+The GitHub Action IAM role will be used to manage resources in the management
+account and will also be used to access other accounts where Kubernetes
+clusters are deployed.
+
+Create a Route 53 hosted zone for `aws.mylabs.dev`:
 
 > Ensure that the necessary environment variables are set for the AWS CLI
 > (e.g., `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`).
 
 ```bash
-mise run create:aws-primary:cf-route53-gh-action-iam-role-oidc
+mise run create:aws-mgmt:cf-route53-gh-action-iam-role-oidc
 ```
 
 > For more details please inspect the [mise.toml](./mise.toml) file.
@@ -71,7 +111,7 @@ Example:
 
 #### Tenant Accounts
 
-Create an IAM role in each tenant account that allows the primary account to
+Create an IAM role in each tenant account that allows the management account to
 assume a role in the tenant account.
 
 > Make sure to use AWS credentials (`AWS_ACCESS_KEY_ID`,
@@ -137,7 +177,7 @@ flowchart TB
   end
 
   subgraph "AWS"
-    subgraph "AWS Primary Account"
+    subgraph "AWS Management Account"
       aws.mylabs.dev@{ icon: "logos:aws-route53", form: "circle", label: "aws.mylabs.dev", pos: "b", h: 60 }
       k8s.aws.mylabs.dev@{ icon: "logos:aws-route53", form: "square", label: "k8s.aws.mylabs.dev", pos: "b", h: 60 }
     end
@@ -152,7 +192,7 @@ flowchart TB
   end
 
   subgraph "Azure"
-    subgraph "Azure Primary Account"
+    subgraph "Azure Management Account"
       az.mylabs.dev@{ icon: "logos:azure-icon", form: "circle", label: "az.mylabs.dev", pos: "b", h: 60 }
       k8s.az.mylabs.dev@{ icon: "logos:azure-icon", form: "square", label: "k8s.az.mylabs.dev", pos: "b", h: 60 }
     end
@@ -167,7 +207,7 @@ flowchart TB
   end
 
   subgraph "GCP"
-    subgraph "GCP Primary Account"
+    subgraph "GCP Management Account"
       gcp.mylabs.dev@{ icon: "logos:google-cloud", form: "circle", label: "gcp.mylabs.dev", pos: "b", h: 60 }
       k8s.gcp.mylabs.dev@{ icon: "logos:google-cloud", form: "square", label: "k8s.gcp.mylabs.dev", pos: "b", h: 60 }
     end

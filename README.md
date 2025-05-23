@@ -79,8 +79,8 @@ AWS_USER_ARN=$(aws iam list-users --query "Users[? UserName==\`${AWS_USER_NAME}\
 sed -i "s@^AWS_USER_ARN.*@AWS_USER_ARN = \"${AWS_USER_ARN}\"@" mise.local.toml
 ```
 
-The `aws-cli` user was created in the management AWS account and will be used to
-access all AWS accounts via the AWS CLI.
+The `aws-cli` user was created in the management AWS account. It will be used to
+access all AWS accounts via the AWS CLI by assuming the proper IAM Role.
 
 ##### Route35 Hosted Zone + GitHub Action IAM Role
 
@@ -239,6 +239,62 @@ flowchart TB
   k8s.gcp.mylabs.dev --> k02.k8s.gcp.mylabs.dev
   k8s.gcp.mylabs.dev --> k03.k8s.gcp.mylabs.dev
   k8s.gcp.mylabs.dev --> k04.k8s.gcp.mylabs.dev
+```
+
+### AWS diagram
+
+Suppose you have three AWS accounts and want to provision one EKS cluster in each.
+The setup would look like this:
+
+- **AWS Management Account** - centralized account responsible for provisioning
+  and managing infrastructure, hosting two EKS clusters, and assuming IAM roles
+  in tenant accounts
+  - k01.k8s.aws.mylabs.dev
+  - k02.k8s.aws.mylabs.dev
+- **AWS Tenant Account 01** – tenant account hosting two EKS clusters. These
+  clusters are created using a local IAM role, which is assumed by the IAM role
+  from the management account
+  - k03.k8s.aws.mylabs.dev
+  - k04.k8s.aws.mylabs.dev
+- **AWS Tenant Account 02** – tenant account hosting two EKS clusters. These
+  clusters are created using a local IAM role, which is assumed by the IAM role
+  from the management account
+  - k05.k8s.aws.mylabs.dev
+  - k06.k8s.aws.mylabs.dev
+
+```mermaid
+flowchart TB
+
+  subgraph "AWS"
+    subgraph "AWS Management Account"
+      aws-cli@{ icon: "logos:panda", form: "rounded", label: "aws-cli", pos: "b", h: 60 }
+      aws-mgmt-iam-role@{ icon: "logos:aws-iam", form: "square", label: "aws-mgmt-iam-role", pos: "b", h: 60 }
+      aws-01-iam-role@{ icon: "logos:aws-iam", form: "square", label: "aws-01-iam-role", pos: "b", h: 60 }
+      k01.k8s.aws.mylabs.dev@{ icon: "logos:aws-eks", form: "square", label: "k01.k8s.aws.mylabs.dev", pos: "b", h: 60 }
+      k02.k8s.aws.mylabs.dev@{ icon: "logos:aws-eks", form: "square", label: "k02.k8s.aws.mylabs.dev", pos: "b", h: 60 }
+    end
+    subgraph "AWS Account 01"
+      aws-02-iam-role@{ icon: "logos:aws-iam", form: "square", label: "aws-02-iam-role", pos: "b", h: 60 }
+      k03.k8s.aws.mylabs.dev@{ icon: "logos:aws-eks", form: "square", label: "k03.k8s.aws.mylabs.dev", pos: "b", h: 60 }
+      k04.k8s.aws.mylabs.dev@{ icon: "logos:aws-eks", form: "square", label: "k04.k8s.aws.mylabs.dev", pos: "b", h: 60 }
+    end
+    subgraph "AWS Account 02"
+      aws-03-iam-role@{ icon: "logos:aws-iam", form: "square", label: "aws-03-iam-role", pos: "b", h: 60 }
+      k05.k8s.aws.mylabs.dev@{ icon: "logos:aws-eks", form: "square", label: "k05.k8s.aws.mylabs.dev", pos: "b", h: 60 }
+      k06.k8s.aws.mylabs.dev@{ icon: "logos:aws-eks", form: "square", label: "k06.k8s.aws.mylabs.dev", pos: "b", h: 60 }
+    end
+  end
+
+  aws-cli -- "Assume Role (STS)" --> aws-mgmt-iam-role
+  aws-mgmt-iam-role -- "Assume Role (STS)" --> aws-01-iam-role
+  aws-01-iam-role --> k01.k8s.aws.mylabs.dev
+  aws-01-iam-role --> k02.k8s.aws.mylabs.dev
+  aws-mgmt-iam-role -- "Assume Role (STS)" --> aws-02-iam-role
+  aws-02-iam-role --> k03.k8s.aws.mylabs.dev
+  aws-02-iam-role --> k04.k8s.aws.mylabs.dev
+  aws-mgmt-iam-role -- "Assume Role (STS)" --> aws-03-iam-role
+  aws-03-iam-role --> k05.k8s.aws.mylabs.dev
+  aws-03-iam-role --> k06.k8s.aws.mylabs.dev
 ```
 
 ## Tests

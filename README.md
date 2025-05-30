@@ -37,8 +37,8 @@ Kubernetes clusters are deployed.
 
 ## Cloud Providers - Multi-Account Setup
 
-Let's assume you have two AWS accounts, two Azure accounts, and two GCP accounts, and you
-want to deploy two Kubernetes clusters (EKS, AKS, GKE) in each account:
+Let's assume you have two AWS accounts, two Azure accounts, and two GCP accounts,
+and you want to deploy two Kubernetes clusters (EKS, AKS, GKE) in each account:
 
 | Cloud Provider                                   | Account 01                                                   | Account 02                                                   |
 |--------------------------------------------------|--------------------------------------------------------------|--------------------------------------------------------------|

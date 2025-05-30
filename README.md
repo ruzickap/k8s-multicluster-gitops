@@ -6,8 +6,8 @@ clusters across multiple cloud accounts, using GitOps principles with ArgoCD.
 ## Requirements
 
 Guides on setting up Kubernetes clusters in the cloud are common, but few cover
-managing clusters across multiple providers and accounts (a key need for large
-enterprises)
+managing clusters across multiple providers and accounts, a key need for large
+enterprises.
 
 This project aims to provide a practical example:
 
@@ -30,15 +30,15 @@ Each cloud provider has a designated "management account" where subdomains are h
 > The second-level domain `mylabs.dev` is hosted externally (e.g., Cloudflare),
 > and it's the user's responsibility to configure DNS delegation properly.
 
-An IAM role (or the equivalent for each cloud provider) will be created in the
-management account. This role will allow GitHub Actions / mise to manage resources
+An IAM role (or its equivalent for each cloud provider) will be created in the
+management account. This role will allow GitHub Actions/mise to manage resources
 in the management account and will also be used to access other accounts where
 Kubernetes clusters are deployed.
 
 ## Cloud Providers - Multi-Account Setup
 
-Let's assume you have 2 AWS accounts, 2 Azure accounts, 2 GCP accounts and you
-want to deploy 2 Kubernetes clusters (EKS, AKS, GKE) in each account:
+Let's assume you have two AWS accounts, two Azure accounts, and two GCP accounts, and you
+want to deploy two Kubernetes clusters (EKS, AKS, GKE) in each account:
 
 | Cloud Provider                                   | Account 01                                                   | Account 02                                                   |
 |--------------------------------------------------|--------------------------------------------------------------|--------------------------------------------------------------|
@@ -79,17 +79,16 @@ AWS_USER_ARN=$(aws iam list-users --query "Users[? UserName==\`${AWS_USER_NAME}\
 sed -i "s@^AWS_USER_ARN.*@AWS_USER_ARN = \"${AWS_USER_ARN}\"@" mise.local.toml
 ```
 
-The `aws-cli` user was created in the management AWS account. It will be used to
-access all AWS accounts via the AWS CLI by assuming the proper IAM Role.
+The `aws-cli` user is created in the management AWS account. It will be used to
+access all AWS accounts via the AWS CLI by assuming the proper IAM role.
 
 ##### Route35 Hosted Zone + GitHub Action IAM Role
 
 The following steps will create a Route 53 hosted zone for the subdomain
-`aws.mylabs.dev` and a GitHub Action IAM role that can be assumed by the
+`aws.mylabs.dev` and a GitHub Actions IAM role that can be assumed by the
 GitHub Actions workflow.
-The GitHub Action IAM role will be used to manage resources in the management
-account and will also be used to access other accounts where Kubernetes
-clusters are deployed.
+The GitHub Actions IAM role will be used to manage resources in the management
+account and to access other accounts where Kubernetes clusters are deployed.
 
 Create a Route 53 hosted zone for `aws.mylabs.dev`:
 
@@ -127,7 +126,7 @@ mise run create:aws-tenant:cf-iam-role
 
 ## K8s Clusters
 
-All the "kubeconfig files" will be stored in the `clusters/.kubeconfigs`
+All kubeconfig files will be stored in the `clusters/.kubeconfigs`
 directory.
 
 ### Kind

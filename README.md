@@ -6,8 +6,8 @@ clusters across multiple cloud accounts, using GitOps principles with ArgoCD.
 ## Requirements
 
 Guides on setting up Kubernetes clusters in the cloud are common, but few cover
-managing clusters across multiple providers and accounts, a key need for large
-enterprises.
+managing clusters across multiple providers and accounts, which is a key need
+for large enterprises.
 
 This project aims to provide a practical example:
 
@@ -18,7 +18,7 @@ This project aims to provide a practical example:
 
 ## Architecture
 
-You likely need to deploy multiple Kubernetes clusters across various cloud
+You will likely need to deploy multiple Kubernetes clusters across various cloud
 providers and accounts.
 
 Each cloud provider has a designated "management account" where subdomains are hosted:
@@ -80,7 +80,7 @@ sed -i "s@^AWS_USER_ARN.*@AWS_USER_ARN = \"${AWS_USER_ARN}\"@" mise.local.toml
 ```
 
 The `aws-cli` user is created in the management AWS account. It will be used to
-access all AWS accounts via the AWS CLI by assuming the proper IAM role.
+access all AWS accounts via the AWS CLI by assuming the appropriate IAM role.
 
 ##### Route35 Hosted Zone + GitHub Action IAM Role
 
@@ -111,7 +111,7 @@ Example:
 #### Tenant Accounts
 
 Create an IAM role in each tenant account that allows the management account to
-assume a role in the tenant account.
+assume a role in that tenant account.
 
 > Make sure to use AWS credentials (`AWS_ACCESS_KEY_ID`,
 > `AWS_SECRET_ACCESS_KEY`) for the tenant account.

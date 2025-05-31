@@ -6,7 +6,7 @@ clusters across multiple cloud accounts, using GitOps principles with ArgoCD.
 ## Requirements
 
 Guides on setting up Kubernetes clusters in the cloud are common, but few cover
-managing clusters across multiple providers and accounts, which is a key need 
+managing clusters across multiple providers and accounts, which is a key need
 for large enterprises.
 
 This project aims to provide a practical example:

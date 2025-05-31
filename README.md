@@ -6,8 +6,8 @@ clusters across multiple cloud accounts, using GitOps principles with ArgoCD.
 ## Requirements
 
 Guides on setting up Kubernetes clusters in the cloud are common, but few cover
-managing clusters across multiple providers and accounts, which is a key need for large
-enterprises.
+managing clusters across multiple providers and accounts, which is a key need 
+for large enterprises.
 
 This project aims to provide a practical example:
 
@@ -41,7 +41,7 @@ Let's assume you have two AWS accounts, two Azure accounts, and two GCP accounts
 and you want to deploy two Kubernetes clusters (EKS, AKS, GKE) in each account:
 
 | Cloud Provider                                   | Account 01                                                   | Account 02                                                   |
-| ------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+|--------------------------------------------------|--------------------------------------------------------------|--------------------------------------------------------------|
 | **AWS** (`aws.mylabs.dev`, `k8s.aws.mylabs.dev`) | `k01.k8s.aws.mylabs.dev` (US), `k02.k8s.aws.mylabs.dev` (EU) | `k03.k8s.aws.mylabs.dev` (US), `k04.k8s.aws.mylabs.dev` (EU) |
 | **Azure** (`az.mylabs.dev`, `k8s.az.mylabs.dev`) | `k01.k8s.az.mylabs.dev` (US), `k02.k8s.az.mylabs.dev` (EU)   | `k03.k8s.az.mylabs.dev` (US), `k04.k8s.az.mylabs.dev` (EU)   |
 | **GCP** (`gcp.mylabs.dev`, `k8s.gcp.mylabs.dev`) | `k01.k8s.gcp.mylabs.dev` (US), `k02.k8s.gcp.mylabs.dev` (EU) | `k03.k8s.gcp.mylabs.dev` (US), `k04.k8s.gcp.mylabs.dev` (EU) |

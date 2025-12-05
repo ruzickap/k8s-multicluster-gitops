@@ -49,7 +49,7 @@ jobs:
             -v "$PWD:/mnt" -v "/var/run/docker.sock:/var/run/docker.sock" \
             --workdir /mnt \
             bash bash -c 'set -euo pipefail && \
-              apk add docker && \
+              apk add docker git && \
               wget -q https://mise.run -O - | sh && \
               eval "$(~/.local/bin/mise activate bash)" && \
               mise run "create-${TYPE}-all" && \

@@ -4,7 +4,7 @@
 aws = "2.24.24"
 eksctl = "0.205.0"
 k3d = "5.8.3"
-kind = "0.30.0"
+kind = "0.31.0"
 # keep-sorted end
 
 [settings]

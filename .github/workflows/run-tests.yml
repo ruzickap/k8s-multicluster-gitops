@@ -48,8 +48,8 @@ jobs:
           docker run --rm -i --env GITHUB_TOKEN --env CLICOLOR_FORCE=1 --env TYPE \
             -v "$PWD:/mnt" -v "/var/run/docker.sock:/var/run/docker.sock" \
             --workdir /mnt \
-            bash bash -c 'set -euo pipefail && \
-              apk add docker && \
+            bash bash -c 'set -euxo pipefail && \
+              apk add docker git && \
               wget -q https://mise.run -O - | sh && \
               eval "$(~/.local/bin/mise activate bash)" && \
               mise run "create-${TYPE}-all" && \

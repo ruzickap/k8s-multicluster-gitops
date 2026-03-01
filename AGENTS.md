@@ -42,12 +42,12 @@ docker run --rm -it -v "$PWD:/mnt" \
 ### Linting (CI runs MegaLinter cupcake flavor)
 
 ```bash
-rumdl <file.md>                               # Markdown
+rumdl file.md                                 # Markdown
 shellcheck scripts/*.sh                       # Shell lint
 shfmt --case-indent --indent 2 --space-redirects -d scripts/*.sh
 lychee --config lychee.toml .                 # Link check
 actionlint                                    # GH Actions
-jsonlint --comments <file.json>               # JSON
+jsonlint --comments file.json                 # JSON
 ```
 
 ## Shell Script Style

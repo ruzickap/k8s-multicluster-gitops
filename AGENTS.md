@@ -1,109 +1,159 @@
 # AI Agent Guidelines
 
-## Overview
+Guidelines for AI agents working on this IaC repository
+(`ruzickap/k8s-multicluster-gitops`). The project manages multiple
+Kubernetes clusters (Kind, K3d, EKS) across cloud providers using
+GitOps with ArgoCD. The task runner is **mise**.
 
-This document provides guidelines and best practices for AI agents working
-on this repository. Follow these standards to ensure consistency, quality,
-and maintainability across all contributions.
+## Build, Lint, and Test Commands
 
-## Table of Contents
+### Task Runner (mise)
 
-- [AI Agent Guidelines](#ai-agent-guidelines)
-  - [Overview](#overview)
-  - [Table of Contents](#table-of-contents)
-  - [Markdown Files](#markdown-files)
-    - [Linting and Formatting](#linting-and-formatting)
-    - [Markdown Best Practices](#markdown-best-practices)
-  - [Version Control](#version-control)
-    - [Commit Messages](#commit-messages)
-      - [Format Rules](#format-rules)
-      - [Commit Message Structure](#commit-message-structure)
-        - [Example](#example)
-    - [Branching](#branching)
-    - [Pull Requests](#pull-requests)
-  - [Quality \& Best Practices](#quality--best-practices)
+```bash
+mise tasks                                    # List all tasks
+mise run create:kind:kind01-internal          # Create single cluster
+mise run delete:kind:kind01-internal          # Delete single cluster
+mise run create-kind-all                      # Create all Kind clusters
+mise run create-k3d-all                       # Create all K3d clusters
+mise run "create-kind-all" ::: "create-k3d-all"  # Parallel
+```
 
-## Markdown Files
+### Testing
 
-### Linting and Formatting
+No unit test frameworks. Tests are integration tests that create
+and delete clusters. Single cluster test:
 
-- **Markdown compliance**: Ensure all Markdown files pass `rumdl` checks
-- **Code blocks**: For `bash`/`shell` code blocks:
-  - Verify they pass `shellcheck` validation
-  - Format with `shfmt` for consistency
+```bash
+mise run create:kind:kind01-internal
+mise run delete:kind:kind01-internal
+```
 
-### Markdown Best Practices
+Full test in Docker (matches CI):
 
-- Use proper heading hierarchy (don't skip levels)
-- Wrap lines at 80 characters for readability
-- Use semantic HTML only when necessary
-- Prefer code fences over inline code for multi-line examples
+```bash
+docker run --rm -it -v "$PWD:/mnt" \
+  -v "/var/run/docker.sock:/var/run/docker.sock" \
+  --workdir /mnt bash bash -c \
+  'apk add docker && wget -q https://mise.run -O - | sh && \
+   eval "$(~/.local/bin/mise activate bash)" && \
+   mise run "create-kind-all" && mise run "delete-kind-all"'
+```
+
+### Linting (CI runs MegaLinter cupcake flavor)
+
+```bash
+rumdl <file.md>                               # Markdown
+shellcheck scripts/*.sh                       # Shell lint
+shfmt --case-indent --indent 2 --space-redirects -d scripts/*.sh
+lychee --config lychee.toml .                 # Link check
+actionlint                                    # GH Actions
+jsonlint --comments <file.json>               # JSON
+```
+
+## Shell Script Style
+
+All scripts live in `scripts/` and follow these conventions:
+
+- **Shebang**: `#!/usr/bin/env bash`
+- **Indentation**: 2 spaces (no tabs)
+- **Variables**: UPPERCASE with braces (`${CLUSTER_FQDN}`)
+- **Required vars**: Validate with `${VAR:?Error: message}`
+- **Error handling**: Use `set -euo pipefail` (or `set -eux`)
+- **Structure**: `create()`, `delete()`, `usage()` functions
+  with a `case` statement for command dispatch
+- **Idempotency**: Check if resource exists before creating
+- **Formatting**: Must pass `shfmt --case-indent --indent 2
+  --space-redirects`
+- **Linting**: Must pass `shellcheck` (SC2317 excluded)
+- **Quoting**: Always quote variable expansions
+
+## Markdown Style
+
+- Must pass `rumdl` checks (config: `.rumdl.toml`)
+- Wrap lines at 72 characters
+- Use proper heading hierarchy (no skipped levels)
 - Include language identifiers in code fences
+- Shell code blocks are extracted and validated by CI
+  (`shellcheck` + `shfmt`)
+- Prefer code fences over inline code for multi-line examples
+
+## YAML and TOML Conventions
+
+- **Sorted blocks**: Use `# keep-sorted start` / `# keep-sorted end`
+  comment directives to maintain alphabetical ordering
+- **CloudFormation**: Standard AWS template structure with
+  Parameters, Resources, Outputs
+- **mise configs**: Per-cluster configs in `mise/` directory;
+  cluster-specific env vars (`CLUSTER_FQDN`, `CLUSTER_NAME`)
+
+## JSON Files
+
+- Must pass `jsonlint --comments` validation
+- Comments are permitted (JSON5 style in Renovate config)
+
+## GitHub Actions Workflows
+
+- **Pin actions to full SHA** (never use tags)
+- **Permissions**: Always set `permissions: read-all` at top level
+- **Timeout**: Always set `timeout-minutes` on jobs
+- **Validate**: Run `actionlint` after modifying any workflow
+- **Skip branches**: CI skips `chore/renovate/` and
+  `release-please--` branches
+
+## Security Scanning (CI)
+
+- **Checkov**: IaC scanner (skip `CKV_GHA_7`)
+- **DevSkim**: Pattern scanner (ignore DS162092, DS137138)
+- **KICS**: Fails on HIGH severity only
+- **Trivy**: Fails on HIGH/CRITICAL, ignores unfixed
+- **CodeQL**: GitHub Actions analysis
+- **OSSF Scorecard**: Supply chain security
 
 ## Version Control
 
 ### Commit Messages
 
-#### Format Rules
+Format: `<type>: <description>` (conventional commits)
 
-- **Conventional commit format**: Use standard types (`feat`, `fix`, `docs`,
-  `chore`, `refactor`, `test`, `style`, `perf`, `ci`, `build`, `revert`)
-- **Line limits**: Subject ≤ 80 characters, body lines ≤ 80 characters
-- **Single blank line**: Between subject and body, between body paragraphs
+- Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`,
+  `style`, `perf`, `ci`, `build`, `revert`
+- Subject: imperative mood, lowercase, no period, max 72 chars
+- Body: wrap at 72 chars, explain what and why
+- Reference issues: `Fixes #123`, `Closes #456`
 
-#### Commit Message Structure
-
-- **Subject line**:
-  - Imperative mood (e.g., "add" not "added" or "adds")
-  - Use lower case (except for proper nouns and abbreviations)
-  - No period at the end
-  - Maximum 80 characters
-  - Format: `<type>: <description>`
-
-- **Body** (optional but recommended for non-trivial changes):
-  - Explain **what** changed and **why**
-  - Wrap lines at 80 characters
-  - Use Markdown formatting
-  - Separate paragraphs with blank lines
-  - Reference issues using keywords: `Fixes`, `Closes`, `Resolves`
-
-##### Example
-
-```markdown
+```text
 feat: add automated dependency updates
 
 - Implement Dependabot configuration
 - Configure weekly security updates
-- Add auto-merge for patch/minor updates
 
 Resolves: #123
 ```
 
 ### Branching
 
-- **Naming convention**: Follow the
-  [Conventional Branch](https://conventional-branch.github.io/)
-  specification
+Conventional branch format: `<type>/<description>`
 
-- **Naming guidelines**:
-  - Keep branch names concise and descriptive
-  - Use kebab-case (lower case with hyphens)
-  - Include issue number when applicable: `feat/123-add-feature-name`
+- `feature/` or `feat/`: new features
+- `bugfix/` or `fix/`: bug fixes
+- `hotfix/`: urgent fixes
+- `release/`: releases (e.g., `release/v1.2.0`)
+- `chore/`: non-code tasks
+
+Use lowercase, hyphens, and optional issue numbers
+(`feature/issue-123-add-login-page`).
 
 ### Pull Requests
 
-- **Always create draft PR** - Create pull requests as drafts initially
-- **Title format** - Use conventional commit format (`feat: add new feature`)
-- **Description** - Include clear explanation of changes and motivation
-- **Link issues** - Reference related issues using keywords (Fixes, Closes,
-  Resolves)
+- Always create as **draft** initially
+- Title must follow conventional commit format
+- Include clear description and link related issues
 
-## Quality & Best Practices
+## Quality Checklist
 
-- Pass pre-commit hooks
-- Follow project coding standards
-- Include tests for new functionality
+- Pass all pre-commit hooks and CI checks
+- Two spaces for indentation everywhere (no tabs)
+- Atomic, focused commits with clear reasoning
 - Update documentation for user-facing changes
-- Make atomic, focused commits
-- Explain reasoning behind changes
-- Maintain consistent formatting
+- Consistent formatting across all file types
+- No secrets or credentials in committed files

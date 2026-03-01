@@ -10,12 +10,12 @@ GitOps with ArgoCD. The task runner is **mise**.
 ### Task Runner (mise)
 
 ```bash
-mise tasks                                    # List all tasks
-mise run create:kind:kind01-internal          # Create single cluster
-mise run delete:kind:kind01-internal          # Delete single cluster
-mise run create-kind-all                      # Create all Kind clusters
-mise run create-k3d-all                       # Create all K3d clusters
-mise run "create-kind-all" ::: "create-k3d-all"  # Parallel
+mise tasks                                      # List all tasks
+mise run create:kind:kind01-internal            # Create single cluster
+mise run delete:kind:kind01-internal            # Delete single cluster
+mise run create-kind-all                        # Create all Kind clusters
+mise run create-k3d-all                         # Create all K3d clusters
+mise run "create-kind-all" ::: "create-k3d-all" # Parallel
 ```
 
 ### Testing
@@ -42,12 +42,12 @@ docker run --rm -it -v "$PWD:/mnt" \
 ### Linting (CI runs MegaLinter cupcake flavor)
 
 ```bash
-rumdl file.md                                 # Markdown
-shellcheck scripts/*.sh                       # Shell lint
+rumdl file.md           # Markdown
+shellcheck scripts/*.sh # Shell lint
 shfmt --case-indent --indent 2 --space-redirects -d scripts/*.sh
-lychee --config lychee.toml .                 # Link check
-actionlint                                    # GH Actions
-jsonlint --comments file.json                 # JSON
+lychee --config lychee.toml . # Link check
+actionlint                    # GH Actions
+jsonlint --comments file.json # JSON
 ```
 
 ## Shell Script Style

@@ -70,7 +70,7 @@ All scripts live in `scripts/` and follow these conventions:
 ## Markdown Style
 
 - Must pass `rumdl` checks (config: `.rumdl.toml`)
-- Wrap lines at 72 characters
+- Wrap lines at 80 characters
 - Use proper heading hierarchy (no skipped levels)
 - Include language identifiers in code fences
 - Shell code blocks are extracted and validated by CI

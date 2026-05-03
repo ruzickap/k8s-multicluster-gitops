@@ -1,7 +1,7 @@
 [tools]
 # Tools need to be downloaded each time because if they were downloaded within 'tasks' (which run in parallel), the PATH propagation would not work properly.
 # keep-sorted start
-aws = "2.24.27"
+aws = "2.34.39"
 eksctl = "0.205.0"
 k3d = "5.8.3"
 kind = "0.31.0"

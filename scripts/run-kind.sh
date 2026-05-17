@@ -33,6 +33,7 @@ delete() {
   fi
 }
 
+# jscpd:ignore-start
 usage() {
   echo "*** Usage: $0 {create|delete}"
   exit 1
@@ -58,3 +59,4 @@ case "$1" in
     usage
     ;;
 esac
+# jscpd:ignore-end

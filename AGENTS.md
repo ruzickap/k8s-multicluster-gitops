@@ -104,7 +104,6 @@ All scripts live in `scripts/` and follow these conventions:
 
 - **Checkov**: IaC scanner (skip `CKV_GHA_7`)
 - **DevSkim**: Pattern scanner (ignore DS162092, DS137138)
-- **KICS**: Fails on HIGH severity only
 - **Trivy**: Fails on HIGH/CRITICAL, ignores unfixed
 - **CodeQL**: GitHub Actions analysis
 - **OSSF Scorecard**: Supply chain security

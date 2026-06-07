@@ -2,9 +2,9 @@
 # Tools need to be downloaded each time because if they were downloaded within 'tasks' (which run in parallel), the PATH propagation would not work properly.
 # keep-sorted start
 aws = "2.34.61"
-eksctl = "0.226.0"
-k3d = "5.8.3"
-kind = "0.31.0"
+eksctl = "0.227.0"
+k3d = "5.9.0"
+kind = "0.32.0"
 # keep-sorted end
 
 [settings]

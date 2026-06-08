@@ -1,158 +1,83 @@
-# AI Agent Guidelines
+# AGENTS.md
 
-Guidelines for AI agents working on this IaC repository
-(`ruzickap/k8s-multicluster-gitops`). The project manages multiple
-Kubernetes clusters (Kind, K3d, EKS) across cloud providers using
-GitOps with ArgoCD. The task runner is **mise**.
+Repo-specific notes for agents. General conventions (Markdown/`rumdl`,
+shell/`shellcheck`+`shfmt`, JSON, Terraform, commit/branch/PR rules, security
+scanners) live in the global `~/.config/opencode/AGENTS.md` and are not repeated
+here. This file only covers what is unique to this repo.
 
-## Build, Lint, and Test Commands
+## What this is
 
-### Task Runner (mise)
+`k8s-multicluster-gitops`: IaC to provision Kubernetes clusters across multiple
+clouds/accounts (AWS/Azure/GCP) plus local `kind`/`k3d`. There is **no app code
+and no package manifest** — the repo is driven entirely by `mise` tasks, Bash
+scripts, and CloudFormation. Pinned tool versions live in `mise.toml`
+(`[tools]`).
 
-```bash
-mise tasks                                      # List all tasks
-mise run create:kind:kind01-internal            # Create single cluster
-mise run delete:kind:kind01-internal            # Delete single cluster
-mise run create-kind-all                        # Create all Kind clusters
-mise run create-k3d-all                         # Create all K3d clusters
-mise run "create-kind-all" ::: "create-k3d-all" # Parallel
-```
+## How the cluster tasks are wired (non-obvious)
 
-### Testing
+Everything runs through `mise`. The task layer uses a deliberate three-hop
+indirection — read all three to understand any cluster operation:
 
-No unit test frameworks. Tests are integration tests that create
-and delete clusters. Single cluster test:
+1. `mise.toml` defines the entrypoint tasks. Per-cluster tasks re-invoke mise to
+   work around mise not passing env into parallel tasks
+   (jdx/mise#4593), e.g.:
+   `run = 'mise run --env ${MISE_TASK_NAME##*:} create:${MISE_TASK_NAME##*:}'`
+   So `create:kind:kind01-internal` becomes
+   `mise run --env kind01-internal create:kind01-internal`.
+2. `--env <name>` loads the matching `mise/config.<name>.toml`, which sets
+   `CLUSTER_FQDN` / `CLUSTER_NAME` and defines the real `create:<name>` /
+   `delete:<name>` task.
+3. That task calls `scripts/run-<tool>.sh {create|delete}`.
 
-```bash
-mise run create:kind:kind01-internal
-mise run delete:kind:kind01-internal
-```
+To add a cluster you generally touch all three: a wrapper task in `mise.toml`, a
+new `mise/config.<name>.toml`, and (if a new backend) a `scripts/run-*.sh`.
 
-Full test in Docker (matches CI):
+Aggregate tasks use glob expansion: `create-kind-all` runs
+`mise run "create:kind:*"`. Run a single cluster directly with e.g.
+`mise run create:kind:kind01-internal`.
 
-```bash
-docker run --rm -it -v "$PWD:/mnt" \
-  -v "/var/run/docker.sock:/var/run/docker.sock" \
-  --workdir /mnt bash bash -c \
-  'apk add docker && wget -q https://mise.run -O - | sh && \
-   eval "$(~/.local/bin/mise activate bash)" && \
-   mise run "create-kind-all" && mise run "delete-kind-all"'
-```
+`scripts/run-*.sh` **must stay idempotent** (create checks if the cluster exists
+first) and require `CLUSTER_FQDN` + `CLUSTERS_KUBECONFIG_DIRECTORY` to be set.
+Kubeconfigs are written to `clusters/.kubeconfigs/` (gitignored; dir is created
+on demand).
 
-### Linting (CI runs MegaLinter cupcake flavor)
+## Known gaps — verify before assuming a feature exists
 
-```bash
-rumdl file.md           # Markdown
-shellcheck scripts/*.sh # Shell lint
-shfmt --case-indent --indent 2 --space-redirects -d scripts/*.sh
-lychee --config lychee.toml . # Link check
-actionlint                    # GH Actions
-jsonlint --comments file.json # JSON
-```
+- `mise/config.k01-k8s-aws-mylabs-dev.toml` calls `scripts/run-eksctl.sh`, which
+  **does not exist**. The eksctl path is incomplete; only `run-kind.sh` and
+  `run-k3d.sh` are implemented.
+- `mise.toml` references
+  `cloudformation/allow-mgmt-iam-role-to-assume-tenant-iam-role.yml`, but only
+  `cloudformation/route53-gh-action-iam-role-oidc.yml` exists.
+- `README.md` mentions `mise run create:aws-tenant:cf-iam-role`; the real task
+  is `create:aws-tenant:cf-allow-mgmt-iam-role-to-assume-tenant-iam-role`.
 
-## Shell Script Style
+## AWS / CloudFormation
 
-All scripts live in `scripts/` and follow these conventions:
+`create:aws-*` tasks `aws cloudformation deploy` directly and require AWS creds
+in the env (`AWS_ACCESS_KEY_ID`, etc.); they have interactive `confirm` prompts.
+They write outputs back into `mise.local.toml` via `sed` (gitignored —
+`mise.local.toml`, `mise.*.local.toml`). User-specific values like
+`AWS_USER_ARN` / `AWS_MGMT_IAM_ROLE_ARN` belong in `mise.local.toml`, not
+`mise.toml`.
 
-- **Shebang**: `#!/usr/bin/env bash`
-- **Indentation**: 2 spaces (no tabs)
-- **Variables**: UPPERCASE with braces (`${CLUSTER_FQDN}`)
-- **Required vars**: Validate with `${VAR:?Error: message}`
-- **Error handling**: Use `set -euo pipefail` (or `set -eux`)
-- **Structure**: `create()`, `delete()`, `usage()` functions
-  with a `case` statement for command dispatch
-- **Idempotency**: Check if resource exists before creating
-- **Formatting**: Must pass `shfmt --case-indent --indent 2
-  --space-redirects`
-- **Linting**: Must pass `shellcheck` (SC2317 excluded)
-- **Quoting**: Always quote variable expansions
+## Linting / CI
 
-## Markdown Style
+- CI uses **MegaLinter** (`.mega-linter.yml`), not standalone linters. Notable:
+  Markdown uses `rumdl` (markdownlint disabled), links use `lychee`
+  (`lychee.toml`), `markdown-link-check` disabled. `CHANGELOG.md` is excluded
+  almost everywhere.
+- `mega-linter` extracts shell snippets from changed `*.md` files into a script
+  and lints them, so **bash blocks in Markdown must be valid shell**.
+- Use the `# jscpd:ignore-start/end` markers (see `scripts/run-*.sh`) to
+  suppress copy-paste detection on intentionally duplicated boilerplate.
+- Cluster tests (`.github/workflows/run-tests.yml`) only run on non-`main`
+  branches and only when `**kind**` / `**k3d**` paths change; they create then
+  delete every kind/k3d cluster. Reproduce locally with the Docker command in
+  `README.md` ("Tests").
 
-- Must pass `rumdl` checks (config: `.rumdl.toml`)
-- Wrap lines at 80 characters
-- Use proper heading hierarchy (no skipped levels)
-- Include language identifiers in code fences
-- Shell code blocks are extracted and validated by CI
-  (`shellcheck` + `shfmt`)
-- Prefer code fences over inline code for multi-line examples
+## Releases
 
-## YAML and TOML Conventions
-
-- **Sorted blocks**: Use `# keep-sorted start` / `# keep-sorted end`
-  comment directives to maintain alphabetical ordering
-- **CloudFormation**: Standard AWS template structure with
-  Parameters, Resources, Outputs
-- **mise configs**: Per-cluster configs in `mise/` directory;
-  cluster-specific env vars (`CLUSTER_FQDN`, `CLUSTER_NAME`)
-
-## JSON Files
-
-- Must pass `jsonlint --comments` validation
-- Comments are permitted (JSON5 style in Renovate config)
-
-## GitHub Actions Workflows
-
-- **Pin actions to full SHA** (never use tags)
-- **Permissions**: Always set `permissions: read-all` at top level
-- **Timeout**: Always set `timeout-minutes` on jobs
-- **Validate**: Run `actionlint` after modifying any workflow
-- **Skip branches**: CI skips `chore/renovate/` and
-  `release-please--` branches
-
-## Security Scanning (CI)
-
-- **Checkov**: IaC scanner (skip `CKV_GHA_7`)
-- **DevSkim**: Pattern scanner (ignore DS162092, DS137138)
-- **Trivy**: Fails on HIGH/CRITICAL, ignores unfixed
-- **CodeQL**: GitHub Actions analysis
-- **OSSF Scorecard**: Supply chain security
-
-## Version Control
-
-### Commit Messages
-
-Format: `<type>: <description>` (conventional commits)
-
-- Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`,
-  `style`, `perf`, `ci`, `build`, `revert`
-- Subject: imperative mood, lowercase, no period, max 72 chars
-- Body: wrap at 72 chars, explain what and why
-- Reference issues: `Fixes #123`, `Closes #456`
-
-```text
-feat: add automated dependency updates
-
-- Implement Dependabot configuration
-- Configure weekly security updates
-
-Resolves: #123
-```
-
-### Branching
-
-Conventional branch format: `<type>/<description>`
-
-- `feature/` or `feat/`: new features
-- `bugfix/` or `fix/`: bug fixes
-- `hotfix/`: urgent fixes
-- `release/`: releases (e.g., `release/v1.2.0`)
-- `chore/`: non-code tasks
-
-Use lowercase, hyphens, and optional issue numbers
-(`feature/issue-123-add-login-page`).
-
-### Pull Requests
-
-- Always create as **draft** initially
-- Title must follow conventional commit format
-- Include clear description and link related issues
-
-## Quality Checklist
-
-- Pass all pre-commit hooks and CI checks
-- Two spaces for indentation everywhere (no tabs)
-- Atomic, focused commits with clear reasoning
-- Update documentation for user-facing changes
-- Consistent formatting across all file types
-- No secrets or credentials in committed files
+`main` is release-automated via `release-please` (`release-type: simple`) — do
+not hand-edit version/changelog files. Default branch is `main`; releases and
+`renovate`/`release-please--*` branches are skipped by most CI jobs.

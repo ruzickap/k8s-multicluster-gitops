@@ -37,7 +37,7 @@ jobs:
     steps:
       - name: Post PR summary message to slack
         id: message
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           method: chat.postMessage
           token: ${{ secrets.MY_SLACK_BOT_TOKEN }}
@@ -64,7 +64,7 @@ jobs:
     if: ${{ startsWith(github.event.pull_request.html_url, 'https') || startsWith(github.event.issue.pull_request.html_url, 'https') }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -116,7 +116,7 @@ jobs:
 
       - name: React to PR summary message in slack with emoji
         if: ${{ steps.slack-timestamp.outputs.github_event_pull_request_html_url == 'true' && env.EMOJI != 'false' }}
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           method: reactions.add
           token: ${{ secrets.MY_SLACK_BOT_TOKEN }}
@@ -127,7 +127,7 @@ jobs:
 
       - name: Update the original message with status Merged ✅
         if: ${{ github.event.pull_request.merged && steps.slack-timestamp.outputs.github_event_pull_request_html_url == 'true' }}
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           method: chat.update
           token: ${{ secrets.MY_SLACK_BOT_TOKEN }}
@@ -144,7 +144,7 @@ jobs:
 
       - name: Update the original message with status Closed ❎
         if: ${{ github.event.action == 'closed' && github.event.pull_request.merged == false && steps.slack-timestamp.outputs.github_event_pull_request_html_url == 'true' }}
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           method: chat.update
           token: ${{ secrets.MY_SLACK_BOT_TOKEN }}

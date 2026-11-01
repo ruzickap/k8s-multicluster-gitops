@@ -10,19 +10,22 @@ on:
       - main
   workflow_dispatch:
 
-permissions: read-all
+permissions: {}
 
 jobs:
   commit-check:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: commit-check/commit-check-action@562a184b2b8e583e757b17eb385bc48370f44547 # v2.13.1
+      - uses: commit-check/commit-check-action@b6819c7bfd40f576d670a78712646a67f2659ff3 # v2.18.2
         with:
           pr-title: true
         env:

@@ -52,8 +52,10 @@ jobs:
             -v "$PWD:/mnt" -v "/var/run/docker.sock:/var/run/docker.sock" \
             --workdir /mnt \
             bash bash -c 'set -euo pipefail && \
-              apk add docker && \
+              apk add docker git && \
+              git config --global --add safe.directory /mnt && \
               wget -q https://mise.run -O - | sh && \
+              ~/.local/bin/mise trust && \
               eval "$(~/.local/bin/mise activate bash)" && \
               mise run "create-${TYPE}-all" && \
               mise run "delete-${TYPE}-all" && \
@@ -76,7 +78,7 @@ jobs:
           persist-credentials: false
 
       - name: 📦 Install mise
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
 
       - name: 🚀 Run mise
         env:
